@@ -67,13 +67,14 @@ class AwsResources(object):
         """
 
         INSTANCE_IDS, INSTANCE_TAG_KEYS, INSTANCE_TAG_VALUES, \
-            BUCKET_NAMES = range(4)
+            BUCKET_NAMES = range(4) 
 
     def __init__(self,
                  log_exception,
                  refresh_instance_ids=True,
                  refresh_instance_tags=True,
-                 refresh_bucket_names=True):
+                 refresh_bucket_names=True,
+                 refresh_dynamodb_table_names=True):  # added by inokappa
         """Initializes AwsResources.
 
         Args:
@@ -94,23 +95,32 @@ class AwsResources(object):
         self.instance_tag_values = set()
         self.bucket_names = []  # TODO: Make this 'private'
         self.s3_uri_names = []  # TODO: Make this 'private'
+        self.dynamodb_table_names = [] # added by inokappa
+
         self.refresh_instance_ids = refresh_instance_ids
         self.refresh_instance_tags = refresh_instance_tags
         self.refresh_bucket_names = refresh_bucket_names
+        self.refresh_dynamodb_table_names = refresh_dynamodb_table_names # added by inokappa
+
         self.INSTANCE_IDS_MARKER = '[instance ids]'
         self.INSTANCE_TAG_KEYS_MARKER = '[instance tag keys]'
         self.INSTANCE_TAG_VALUES_MARKER = '[instance tag values]'
         self.BUCKET_NAMES_MARKER = '[bucket names]'
+        self.DYNAMODB_TABLE_NAMES_MARKER = '[dynamodb table names]' # added by inokapp
+
         self.INSTANCE_IDS = '--instance-ids'
         self.EC2_TAG_KEY = '--ec2-tag-key'
         self.EC2_TAG_VALUE = '--ec2-tag-value'
         self.EC2_STATE = '--ec2-state'
         self.BUCKET = '--bucket'
         self.S3_URI = 's3:'
+        self.DYNAMODB_TABLE = '--table-name'
+
         self.QUERY_INSTANCE_IDS_CMD = 'aws ec2 describe-instances --query "Reservations[].Instances[].[InstanceId]" --output text'
         self.QUERY_INSTANCE_TAG_KEYS_CMD = 'aws ec2 describe-instances --filters "Name=tag-key,Values=*" --query Reservations[].Instances[].Tags[].Key --output text'
         self.QUERY_INSTANCE_TAG_VALUES_CMD = 'aws ec2 describe-instances --filters "Name=tag-value,Values=*" --query Reservations[].Instances[].Tags[].Value --output text'
         self.QUERY_BUCKET_NAMES_CMD = 'aws s3 ls'
+        self.QUERY_DYNAMODB_TABLE_NAMES_CMD = 'aws dynamodb list-tables --query TableNames --output text' # added by inokapp
         self.log_exception = log_exception
 
     def refresh(self, force_refresh=False):
@@ -150,6 +160,9 @@ class AwsResources(object):
             if self.refresh_bucket_names:
                 print('  Refreshing bucket names...')
                 self.query_bucket_names()
+            if self.refresh_dynamodb_table_names:
+                print('  Refreshing DynamoDB table names...')
+                self.query_dynamodb_table_names()
             print('Done refreshing')
         try:
             self.save_resources_to_file(file_path)
@@ -224,6 +237,21 @@ class AwsResources(object):
                 except:
                     # Ignore blank lines
                     pass
+   
+    # added by inokappa
+    def query_dynamodb_table_names(self):
+        """Queries and stores DynamoDB table names from AWS.
+
+        Args:
+            * None.
+
+        Returns:
+            None.
+        """
+        output = self.query_aws(self.QUERY_DYNAMODB_TABLE_NAMES_CMD)
+        if output is not None:
+            output = re.sub('\n', ' ', output)
+            self.dynamodb_table_names = output.split()
 
     def add_bucket_name(self, bucket_name):
         """Adds the bucket name to our bucket resources.
@@ -317,3 +345,7 @@ class AwsResources(object):
             fp.write(self.BUCKET_NAMES_MARKER + '\n')
             for bucket_name in self.bucket_names:
                 fp.write(bucket_name + '\n')
+            # added by inokapp
+            fp.write(self.DYNAMODB_TABLE_NAMES_MARKER + '\n')
+            for dynamodb_table_name in self.dynamodb_table_names:
+                fp.write(dynamodb_table_name + '\n')

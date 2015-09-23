@@ -112,13 +112,15 @@ class AwsCompleter(Completer):
                                       self.resources.EC2_TAG_VALUE,
                                       self.resources.EC2_STATE,
                                       self.resources.BUCKET,
-                                      self.resources.S3_URI],
+                                      self.resources.S3_URI,
+                                      self.resources.DYNAMODB_TABLE],
                                      [self.resources.instance_ids,
                                       self.resources.instance_tag_keys,
                                       self.resources.instance_tag_values,
                                       self.ec2_states,
                                       self.resources.bucket_names,
-                                      self.resources.s3_uri_names]))
+                                      self.resources.s3_uri_names,
+                                      self.resources.dynamodb_table_names]))
 
     def refresh_resources(self, force_refresh=False):
         """Convenience function to refresh resources for completion.
